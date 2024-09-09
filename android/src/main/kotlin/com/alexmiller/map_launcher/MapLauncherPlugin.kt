@@ -86,19 +86,6 @@ class MapLauncherPlugin : FlutterPlugin, MethodCallHandler {
                 val installedMaps = getInstalledMaps()
                 result.success(installedMaps.map { map -> map.toMap() })
             }
-            "showMarker", "showDirections" -> {
-                val args = call.arguments as Map<*, *>
-
-                if (!isMapAvailable(args["mapType"] as String)) {
-                    result.error("MAP_NOT_AVAILABLE", "Map is not installed on a device", null)
-                    return
-                }
-
-                val mapType = MapType.valueOf(args["mapType"] as String)
-                val url = args["url"] as String
-
-                launchMap(mapType, url, result)
-            }
             "isMapAvailable" -> {
                 val args = call.arguments as Map<*, *>
                 result.success(isMapAvailable(args["mapType"] as String))

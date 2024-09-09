@@ -147,6 +147,10 @@ class AvailableMap {
   }
 
   /// Launches current map and shows marker at `coords`
+  @Deprecated(
+    'Use showCoordinates instead. '
+    'This feature was deprecated after v4.0.0',
+  )
   Future<void> showMarker({
     required Coords coords,
     required String title,
@@ -154,11 +158,42 @@ class AvailableMap {
     int? zoom,
     Map<String, String>? extraParams,
   }) {
-    return MapLauncher.showMarker(
+    return showCoordinates(
+      coords: coords,
+      title: title,
+      description: description,
+      zoom: zoom,
+      extraParams: extraParams,
+    );
+  }
+
+  Future<void> showCoordinates({
+    required Coords coords,
+    required String title,
+    String? description,
+    int? zoom,
+    Map<String, String>? extraParams,
+  }) {
+    return MapLauncher.showCoordinates(
       mapType: mapType,
       coords: coords,
       title: title,
       description: description,
+      zoom: zoom,
+      extraParams: extraParams,
+    );
+  }
+
+  Future<void> showAddress({
+    required String address,
+    required String title,
+    int? zoom,
+    Map<String, String>? extraParams,
+  }) {
+    return MapLauncher.showAddress(
+      mapType: mapType,
+      address: address,
+      title: title,
       zoom: zoom,
       extraParams: extraParams,
     );

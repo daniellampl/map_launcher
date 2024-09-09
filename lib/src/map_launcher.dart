@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:map_launcher/src/address_url.dart';
 import 'package:map_launcher/src/directions_url.dart';
 import 'package:map_launcher/src/marker_url.dart';
 import 'package:map_launcher/src/models.dart';
 import 'package:map_launcher/src/utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MapLauncher {
   static const MethodChannel _channel = MethodChannel('map_launcher');
@@ -17,12 +20,32 @@ class MapLauncher {
     );
   }
 
-  /// Opens map app specified in [mapType]
-  /// and shows marker at [coords]
+  @Deprecated(
+    'Use showCoordinates instead. '
+    'This feature was deprecated after v4.0.0',
+  )
   static Future<dynamic> showMarker({
     required MapType mapType,
     required Coords coords,
-    required String title,
+    String? title,
+    String? description,
+    int? zoom,
+    Map<String, String>? extraParams,
+  }) =>
+      showCoordinates(
+        mapType: mapType,
+        coords: coords,
+        title: title,
+        description: description,
+        zoom: zoom,
+        extraParams: extraParams,
+      );
+
+  /// Opens map app specified in [mapType] and shows marker at its [coords].
+  static Future<dynamic> showCoordinates({
+    required MapType mapType,
+    required Coords coords,
+    String? title,
     String? description,
     int? zoom,
     Map<String, String>? extraParams,
@@ -36,15 +59,25 @@ class MapLauncher {
       extraParams: extraParams,
     );
 
-    final Map<String, String?> args = {
-      'mapType': Utils.enumToString(mapType),
-      'url': Uri.encodeFull(url),
-      'title': title,
-      'description': description,
-      'latitude': coords.latitude.toString(),
-      'longitude': coords.longitude.toString(),
-    };
-    return _channel.invokeMethod('showMarker', args);
+    await launchUrl(Uri.parse(url));
+  }
+
+  static Future<dynamic> showAddress({
+    required MapType mapType,
+    required String address,
+    String? title,
+    int? zoom,
+    Map<String, String>? extraParams,
+  }) async {
+    final String url = getMapAddressUrl(
+      mapType: mapType,
+      address: address,
+      title: title,
+      zoom: zoom,
+      extraParams: extraParams,
+    );
+
+    await _launchMap(url);
   }
 
   /// Opens map app specified in [mapType]
@@ -59,37 +92,39 @@ class MapLauncher {
     DirectionsMode? directionsMode = DirectionsMode.driving,
     Map<String, String>? extraParams,
   }) async {
-    final url = getMapDirectionsUrl(
-      mapType: mapType,
-      destination: destination,
-      destinationTitle: destinationTitle,
-      origin: origin,
-      originTitle: originTitle,
-      waypoints: waypoints,
-      directionsMode: directionsMode,
-      extraParams: extraParams,
-    );
+    if (Platform.isIOS && waypoints != null && waypoints.length > 1) {
+      final Map<String, dynamic> args = {
+        'destinationTitle': destinationTitle,
+        'destinationLatitude': destination.latitude.toString(),
+        'destinationLongitude': destination.longitude.toString(),
+        'originLatitude': origin?.latitude.toString(),
+        'originLongitude': origin?.longitude.toString(),
+        'originTitle': originTitle,
+        'directionsMode': Utils.enumToString(directionsMode),
+        'waypoints': waypoints
+            .map((waypoint) => {
+                  'latitude': waypoint.latitude.toString(),
+                  'longitude': waypoint.longitude.toString(),
+                  'title': waypoint.title,
+                })
+            .toList(),
+      };
 
-    final Map<String, dynamic> args = {
-      'mapType': Utils.enumToString(mapType),
-      'url': Uri.encodeFull(url),
-      'destinationTitle': destinationTitle,
-      'destinationLatitude': destination.latitude.toString(),
-      'destinationLongitude': destination.longitude.toString(),
-      'destinationtitle': destinationTitle,
-      'originLatitude': origin?.latitude.toString(),
-      'originLongitude': origin?.longitude.toString(),
-      'originTitle': originTitle,
-      'directionsMode': Utils.enumToString(directionsMode),
-      'waypoints': (waypoints ?? [])
-          .map((waypoint) => {
-                'latitude': waypoint.latitude.toString(),
-                'longitude': waypoint.longitude.toString(),
-                'title': waypoint.title,
-              })
-          .toList(),
-    };
-    return _channel.invokeMethod('showDirections', args);
+      return _channel.invokeMethod('showDirections', args);
+    } else {
+      final String url = getMapDirectionsUrl(
+        mapType: mapType,
+        destination: destination,
+        destinationTitle: destinationTitle,
+        origin: origin,
+        originTitle: originTitle,
+        waypoints: waypoints,
+        directionsMode: directionsMode,
+        extraParams: extraParams,
+      );
+
+      return _launchMap(url);
+    }
   }
 
   /// Returns boolean indicating if map app is installed
@@ -98,5 +133,9 @@ class MapLauncher {
       'isMapAvailable',
       {'mapType': Utils.enumToString(mapType)},
     );
+  }
+
+  static Future<dynamic> _launchMap(String url) async {
+    await launchUrl(Uri.parse(url));
   }
 }

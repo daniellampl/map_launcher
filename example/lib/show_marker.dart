@@ -72,7 +72,7 @@ class _ShowMarkerState extends State<ShowMarker> {
               MapsSheet.show(
                 context: context,
                 onMapTap: (map) {
-                  map.showMarker(
+                  map.showCoordinates(
                     coords: Coords(latitude, longitude),
                     title: title,
                     zoom: zoom,

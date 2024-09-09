@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:map_launcher/src/maps/apple_maps.dart';
+import 'package:map_launcher/src/maps/google_maps.dart';
 import 'package:map_launcher/src/models.dart';
 import 'package:map_launcher/src/utils.dart';
 
@@ -15,25 +17,20 @@ String getMapMarkerUrl({
   final zoomLevel = zoom ?? 16;
   switch (mapType) {
     case MapType.google:
-      return Utils.buildUrl(
-        url: Platform.isIOS ? 'comgooglemaps://' : 'geo:0,0',
-        queryParams: {
-          'q':
-              '${coords.latitude},${coords.longitude}${title != null && title.isNotEmpty ? '($title)' : ''}',
-          'zoom': '$zoomLevel',
-          ...(extraParams ?? {}),
-        },
+    case MapType.googleGo:
+      return GoogleMaps(go: mapType == MapType.googleGo).getCoordinatesUrl(
+        coordinates: coords,
+        title: title,
+        zoom: zoom,
+        extraParams: extraParams,
       );
 
-    case MapType.googleGo:
-      return Utils.buildUrl(
-        url: 'http://maps.google.com/maps',
-        queryParams: {
-          'q':
-              '${coords.latitude},${coords.longitude}${title != null && title.isNotEmpty ? '($title)' : ''}',
-          'zoom': '$zoomLevel',
-          ...(extraParams ?? {}),
-        },
+    case MapType.apple:
+      return const AppleMaps().getCoordinatesUrl(
+        coordinates: coords,
+        title: title,
+        zoom: zoom,
+        extraParams: extraParams,
       );
 
     case MapType.amap:
@@ -62,15 +59,6 @@ String getMapMarkerUrl({
           'src': 'com.map_launcher',
           'coord_type': 'gcj02',
           'zoom': '$zoomLevel',
-          ...(extraParams ?? {}),
-        },
-      );
-
-    case MapType.apple:
-      return Utils.buildUrl(
-        url: 'http://maps.apple.com/maps',
-        queryParams: {
-          'saddr': '${coords.latitude},${coords.longitude}',
           ...(extraParams ?? {}),
         },
       );
@@ -343,5 +331,8 @@ String getMapMarkerUrl({
             'https://www.mappls.com/location/${coords.latitude},${coords.longitude}',
         queryParams: {},
       );
+
+    default:
+      throw UnimplementedError('MapType $mapType is not supported');
   }
 }

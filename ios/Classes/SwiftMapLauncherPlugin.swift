@@ -111,24 +111,6 @@ private func getDirectionsMode(directionsMode: String?) -> String {
     }
 }
 
-private func showMarker(mapType: MapType, url: String, title: String, latitude: String, longitude: String) {
-    switch mapType {
-    case MapType.apple:
-        let coordinate = CLLocationCoordinate2DMake(Double(latitude)!, Double(longitude)!)
-        let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.02))
-        let placemark = MKPlacemark(coordinate: coordinate, addressDictionary: nil)
-        let mapItem = MKMapItem(placemark: placemark)
-        let options = [
-            MKLaunchOptionsMapCenterKey: NSValue(mkCoordinate: region.center),
-            MKLaunchOptionsMapSpanKey: NSValue(mkCoordinateSpan: region.span)]
-        mapItem.name = title
-        mapItem.openInMaps(launchOptions: options)
-    default:
-        UIApplication.shared.open(URL(string:url)!, options: [:], completionHandler: nil)
-
-    }
-}
-
 private func showDirections(mapType: MapType, url: String, destinationTitle: String?, destinationLatitude: String, destinationLongitude: String, originTitle: String?, originLatitude: String?, originLongitude: String?, directionsMode: String?, waypoints: [[String: String?]]?) {
     switch mapType {
     case MapType.apple:
@@ -168,7 +150,6 @@ private func isMapAvailable(map: Map?) -> Bool {
     return UIApplication.shared.canOpenURL(URL(string:map.urlPrefix!)!)
 }
 
-
 public class SwiftMapLauncherPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "map_launcher", binaryMessenger: registrar.messenger())
@@ -180,23 +161,6 @@ public class SwiftMapLauncherPlugin: NSObject, FlutterPlugin {
         switch call.method {
         case "getInstalledMaps":
             result(maps.filter({ isMapAvailable(map: $0) }).map({ $0.toMap() }))
-
-        case "showMarker":
-            let args = call.arguments as! NSDictionary
-            let mapType = args["mapType"] as! String
-            let url = args["url"] as! String
-            let title = args["title"] as! String
-            let latitude = args["latitude"] as! String
-            let longitude = args["longitude"] as! String
-
-            let map = getMapByRawMapType(type: mapType)
-            if (!isMapAvailable(map: map)) {
-                result(FlutterError(code: "MAP_NOT_AVAILABLE", message: "Map is not installed on a device", details: nil))
-                return;
-            }
-
-            showMarker(mapType: MapType(rawValue: mapType)!, url: url, title: title, latitude: latitude, longitude: longitude)
-            result(nil)
 
         case "showDirections":
             let args = call.arguments as! NSDictionary

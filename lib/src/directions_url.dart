@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:map_launcher/src/maps/apple_maps.dart';
+import 'package:map_launcher/src/maps/google_maps.dart';
 import 'package:map_launcher/src/models.dart';
 import 'package:map_launcher/src/utils.dart';
 
@@ -15,49 +17,23 @@ String getMapDirectionsUrl({
   Map<String, String>? extraParams,
 }) {
   switch (mapType) {
-    case MapType.google:
-      return Utils.buildUrl(
-        url: 'https://www.google.com/maps/dir/',
-        queryParams: {
-          'api': '1',
-          'destination': '${destination.latitude},${destination.longitude}',
-          'origin': Utils.nullOrValue(
-            origin,
-            '${origin?.latitude},${origin?.longitude}',
-          ),
-          'waypoints': waypoints
-              ?.map((waypoint) => '${waypoint.latitude},${waypoint.longitude}')
-              .join('|'),
-          'travelmode': Utils.enumToString(directionsMode),
-          ...(extraParams ?? {}),
-        },
-      );
-
     case MapType.googleGo:
-      return Utils.buildUrl(
-        url: 'https://www.google.com/maps/dir/',
-        queryParams: {
-          'api': '1',
-          'destination': '${destination.latitude},${destination.longitude}',
-          'origin': Utils.nullOrValue(
-            origin,
-            '${origin?.latitude},${origin?.longitude}',
-          ),
-          'waypoints': waypoints
-              ?.map((waypoint) => '${waypoint.latitude},${waypoint.longitude}')
-              .join('|'),
-          'travelmode': Utils.enumToString(directionsMode),
-          ...(extraParams ?? {}),
-        },
+    case MapType.google:
+      return GoogleMaps(go: mapType == MapType.googleGo).getDirectionUrl(
+        destination: destination,
+        origin: origin,
+        waypoints: waypoints,
+        directionsMode: directionsMode,
+        extraParams: extraParams,
       );
 
     case MapType.apple:
-      return Utils.buildUrl(
-        url: 'http://maps.apple.com/maps',
-        queryParams: {
-          'daddr': '${destination.latitude},${destination.longitude}',
-          ...(extraParams ?? {}),
-        },
+      return const AppleMaps().getDirectionUrl(
+        destination: destination,
+        origin: origin,
+        waypoints: waypoints,
+        directionsMode: directionsMode,
+        extraParams: extraParams,
       );
 
     case MapType.amap:
@@ -413,5 +389,8 @@ String getMapDirectionsUrl({
           'mode': mode,
         },
       );
+
+    default:
+      throw UnimplementedError('MapType $mapType is not supported');
   }
 }
